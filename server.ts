@@ -1,5 +1,6 @@
-import app from './app'
+
 import mongoose from 'mongoose'
+import app from './src/app'
 
 const { DB_HOST = '', PORT = 3000 } = process.env
 
