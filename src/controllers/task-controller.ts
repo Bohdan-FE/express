@@ -89,7 +89,7 @@ const getAmountOfTasksByPeriod = async (req: Request, res: Response) => {
   const result = Object.entries(taskCountMap).map(([date, amount]) => ({
     date,
     amount,
-  }));
+  })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   res.json(result);
 };
