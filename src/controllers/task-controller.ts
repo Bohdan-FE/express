@@ -95,19 +95,31 @@ const getAmountOfTasksByPeriod = async (req: Request, res: Response) => {
 };
 
 const reorderTasks = async (req: Request, res: Response) => {
+  try {
     const updates = req.body.tasks;
-  
-    const bulkOps = updates.map(({ taskId, index }: {taskId: string, index: number}) => ({
-      updateOne: {
-        filter: { _id: taskId },
-        update: { $set: { index } },
-      },
-    }));
-  
+
+    const bulkOps = updates.map(
+      ({ taskId, index, status }: { taskId: string; index: number; status?: string }) => ({
+        updateOne: {
+          filter: { _id: taskId },
+          update: { 
+            $set: { 
+              index,
+              ...(status && { status })
+            } 
+          },
+        },
+      })
+    );
+
     await Task.bulkWrite(bulkOps);
-  
+
     res.status(200).json({ success: true });
-  };
+  } catch (err) {
+    res.status(500).json({ success: false, error: err });
+  }
+};
+
     
 
 
