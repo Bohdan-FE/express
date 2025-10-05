@@ -60,6 +60,7 @@ export const reorderTasksSchema = Joi.object({
       Joi.object({
         taskId: Joi.string().required(),
         index: Joi.number().required(),
+        status: Joi.string().valid("todo", "in_progress", "done"),
       }).required()
     )
     .required(),
