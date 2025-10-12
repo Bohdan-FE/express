@@ -91,7 +91,6 @@ const getAmountOfTasksByPeriod = async (req: Request, res: Response) => {
 
   for (const task of tasks) {
     const day = new Date(task.date);
-    day.setUTCHours(0, 0, 0, 0);
     const dayStr = day.toISOString();
 
     if (!taskCountMap[dayStr]) {
