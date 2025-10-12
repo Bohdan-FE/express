@@ -80,18 +80,43 @@ const getAmountOfTasksByPeriod = async (req: Request, res: Response) => {
     date: { $gte: start, $lte: end },
   });
 
-  const taskCountMap: Record<string, number> = {};
+  type StatusCount = {
+    totalAmount: number;
+    in_progress: number;
+    todo: number;
+    done: number;
+  };
+
+  const taskCountMap: Record<string, StatusCount> = {};
+
   for (const task of tasks) {
-    const day = new Date(task.date).toISOString();
-    taskCountMap[day] = (taskCountMap[day] || 0) + 1;
+    const day = new Date(task.date);
+    day.setUTCHours(0, 0, 0, 0);
+    const dayStr = day.toISOString();
+
+    if (!taskCountMap[dayStr]) {
+      taskCountMap[dayStr] = {
+        totalAmount: 0,
+        in_progress: 0,
+        todo: 0,
+        done: 0,
+      };
+    }
+
+    taskCountMap[dayStr].totalAmount += 1;
+    if (task.status === 'in_progress') taskCountMap[dayStr].in_progress += 1;
+    if (task.status === 'todo') taskCountMap[dayStr].todo += 1;
+    if (task.status === 'done') taskCountMap[dayStr].done += 1;
   }
 
-  const result = Object.entries(taskCountMap).map(([date, amount]) => ({
-    date,
-    amount,
-  })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const result = Object.entries(taskCountMap)
+    .map(([date, counts]) => ({
+      date,
+      ...counts,
+    }))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  res.json(result);
+  res.status(200).json(result);
 };
 
 const reorderTasks = async (req: Request, res: Response) => {
