@@ -47,16 +47,18 @@ const login = async (req: Request, res: Response) => {
         token,
         email: user.email,
         name: user.name,
-        id: user._id
+        id: user._id,
+        avatarURL: user.avatarURL
     })
 }
 
 const getCurrent = async (req: Request, res: Response) => {
-    const { email, name } = req.user
+    const { email, name, id, avatarURL } = req.user
     res.json({
         email,
         name,
-        id: req.user._id
+        id,
+        avatarURL
     })
 }
 
