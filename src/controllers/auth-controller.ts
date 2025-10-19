@@ -55,7 +55,8 @@ const getCurrent = async (req: Request, res: Response) => {
     const { email, name } = req.user
     res.json({
         email,
-        name
+        name,
+        id: req.user._id
     })
 }
 
