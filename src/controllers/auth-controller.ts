@@ -45,9 +45,10 @@ const login = async (req: Request, res: Response) => {
     await User.findByIdAndUpdate(user._id, {token})
     res.json({
         token,
-            email: user.email,
-            name: user.name,
-    }) 
+        email: user.email,
+        name: user.name,
+        id: user._id
+    })
 }
 
 const getCurrent = async (req: Request, res: Response) => {

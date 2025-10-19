@@ -4,8 +4,12 @@ import cors from 'cors'
 import authRouter from './routes/auth'
 import taskRouter from './routes/task'
 import 'dotenv/config'
+import { Server } from 'socket.io'
+import { createServer } from 'node:http'
+import { registerSocketHandlers } from './sockets'
 
 const app = express()
+
 
 const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short'
 
@@ -16,6 +20,8 @@ app.use(express.static('public'))
 
 app.use('/users/', authRouter)
 app.use('/tasks/', taskRouter)
+
+
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found' })
