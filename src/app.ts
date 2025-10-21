@@ -3,10 +3,8 @@ import logger from 'morgan'
 import cors from 'cors'
 import authRouter from './routes/auth'
 import taskRouter from './routes/task'
+import userRouter from './routes/user'
 import 'dotenv/config'
-import { Server } from 'socket.io'
-import { createServer } from 'node:http'
-import { registerSocketHandlers } from './sockets'
 
 const app = express()
 
@@ -18,10 +16,9 @@ app.use(cors())
 app.use(express.json())
 app.use(express.static('public'))
 
-app.use('/users/', authRouter)
+app.use('/auth/', authRouter)
 app.use('/tasks/', taskRouter)
-
-
+app.use('/users/', userRouter)
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found' })
