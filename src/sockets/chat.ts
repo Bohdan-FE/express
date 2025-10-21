@@ -1,7 +1,5 @@
 import { Server, Socket } from 'socket.io'
 import Message from '../models/Message'
-import mongoose from 'mongoose'
-
 
 interface OnlineUser {
   userId: string
