@@ -58,21 +58,6 @@ socket.on(
   }
 );
 
-
-  socket.on('getHistory', async ({ withUser }: { withUser: string }) => {
-    const from = socket.data.userId
-    if (!from) return socket.emit('errorMessage', 'You must register first')
-
-    const history = await Message.find({
-      $or: [
-        { from, to: withUser },
-        { from: withUser, to: from },
-      ],
-    }).sort({ timestamp: 1 })
-
-    socket.emit('chatHistory', history)
-  })
-
   socket.on('disconnect', () => {
     const index = onlineUsers.findIndex((u) => u.socketId === socket.id)
     if (index !== -1) onlineUsers.splice(index, 1)
