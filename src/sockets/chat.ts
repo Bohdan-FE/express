@@ -1,5 +1,6 @@
 import { Server, Socket } from 'socket.io'
 import Message from '../models/Message'
+import mongoose from 'mongoose'
 
 
 interface OnlineUser {
@@ -15,28 +16,48 @@ export default function registerChatHandlers(io: Server, socket: Socket) {
     onlineUsers.push({ userId, socketId: socket.id })
   })
 
-  socket.on('privateMessage', async ({ to, message }: { to: string; message: string }) => {
-    const from = socket.data.userId
-    if (!from) return socket.emit('errorMessage', 'You must register first')
+socket.on(
+  'privateMessage',
+  async ({ to, message }: { to: string; message: string }) => {
+    const from = socket.data.userId;
 
-    const savedMsg = await Message.create({ from, to, message })
-
-    const target = onlineUsers.find((u) => u.userId === to)
-
-    if (target) {
-      io.to(target.socketId).emit('privateMessage', {
-        from,
-        message,
-        timestamp: savedMsg.timestamp,
-      })
+    if (!from) {
+      return socket.emit('errorMessage', 'You must register first');
     }
 
-    socket.emit('privateMessage', {
-      from,
-      message,
-      timestamp: savedMsg.timestamp,
-    })
-  })
+    try {
+      // Convert to ObjectId before saving
+      const savedMsg = await Message.create({
+        from,
+        to,
+        message,
+      });
+
+      // Find recipient
+      const target = onlineUsers.find((u) => u.userId === to);
+
+      // Send to recipient if online
+      if (target) {
+        io.to(target.socketId).emit('privateMessage', {
+          from,
+          message,
+          timestamp: savedMsg.createdAt,
+        });
+      }
+
+      // Also emit back to sender for confirmation
+      socket.emit('privateMessage', {
+        from,
+        message,
+        timestamp: savedMsg.createdAt,
+      });
+    } catch (err) {
+      console.error('Error saving message:', err);
+      socket.emit('errorMessage', 'Failed to send message');
+    }
+  }
+);
+
 
   socket.on('getHistory', async ({ withUser }: { withUser: string }) => {
     const from = socket.data.userId

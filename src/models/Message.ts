@@ -1,20 +1,26 @@
-import mongoose, { Schema, Document } from 'mongoose'
+import { Schema, model, Types, Document } from 'mongoose';
+import { handleSaveError } from './hooks';
 
 export interface IMessage extends Document {
-  from: string
-  to: string
-  message: string
-  timestamp: Date
+  from: Types.ObjectId;
+  to: Types.ObjectId;
+  message: string;
+  status?: 'sent' | 'delivered' | 'read';
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const messageSchema = new Schema<IMessage>(
   {
-    from: { type: String, required: true },
-    to: { type: String, required: true },
+    from: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    to: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     message: { type: String, required: true },
-    timestamp: { type: Date, default: Date.now },
+    status: { type: String, enum: ['sent', 'delivered', 'read'], default: 'sent' },
   },
-  { versionKey: false }
-)
+  { versionKey: false, timestamps: true }
+);
 
-export default mongoose.model<IMessage>('Message', messageSchema)
+messageSchema.post("save", handleSaveError);
+
+export default model<IMessage>('Message', messageSchema);
+
