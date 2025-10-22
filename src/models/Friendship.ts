@@ -11,8 +11,8 @@ export interface IFriendship extends Document {
 
 const friendshipSchema = new Schema<IFriendship>(
   {
-    requester: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    recipient: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    requester: { type: Schema.Types.ObjectId, ref: 'user', required: true },
+    recipient: { type: Schema.Types.ObjectId, ref: 'user', required: true },
     status: { type: String, enum: ['pending', 'accepted', 'blocked'], default: 'pending' },
   },
   { timestamps: true }
