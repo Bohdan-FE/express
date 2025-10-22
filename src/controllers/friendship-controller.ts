@@ -13,7 +13,7 @@ export const getFriends = async (req: Request, res: Response) => {
   const friendships = await Friendship.find({
     $or: [{ requester: userId }, { recipient: userId }],
   })
-    .populate('requester recipient', '_id name email avatarURL friendshipStatus')
+    .populate('requester recipient', '_id name email avatarURL')
     .skip(skip)
     .limit(Number(per_page));
 
