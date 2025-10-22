@@ -100,8 +100,10 @@ export const rejectFriendRequest = async (req: Request, res: Response) => {
   const userId = req.user._id;
 
   await Friendship.findOneAndDelete({
-    requester: requesterId,
-    recipient: userId,
+   $or: [
+      { requester: userId, recipient: requesterId },
+      { requester: requesterId, recipient: userId },
+    ],
     status: 'pending',
   });
 
