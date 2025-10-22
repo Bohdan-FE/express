@@ -3,39 +3,50 @@ import Friendship from '../models/Friendship';
 import cntrWrapper from '../decorators/ctrlWrapper';
 
 export const getFriends = async (req: Request, res: Response) => {
-    const { _id: userId } = req.user;
-    const { page = 1, per_page = 10 } = req.query as { page?: string; per_page?: string };
+  const { _id: userId } = req.user;
+  const { page = 1, per_page = 10 } = req.query as { page?: string; per_page?: string };
 
-    const skip = (Number(page) - 1) * Number(per_page);
+  const skip = (Number(page) - 1) * Number(per_page);
 
-    const friendships = await Friendship.find({
-      status: 'accepted',
-      $or: [{ requester: userId }, { recipient: userId }],
-    })
-      .populate('requester recipient', '_id name email avatarURL')
-      .skip(skip)
-      .limit(Number(per_page));
+  // 1️⃣ Find friendships
+  const friendships = await Friendship.find({
+    $or: [{ requester: userId }, { recipient: userId }],
+  })
+    .populate('requester recipient', '_id name email avatarURL')
+    .skip(skip)
+    .limit(Number(per_page));
 
-    const total = await Friendship.countDocuments({
-      status: 'accepted',
-      $or: [{ requester: userId }, { recipient: userId }],
-    });
+  // 2️⃣ Count total friendships
+  const total = await Friendship.countDocuments({
+    $or: [{ requester: userId }, { recipient: userId }],
+  });
 
-    const friends = friendships.map((f) =>
-      f.requester._id.toString() === userId.toString()
-        ? f.recipient
-        : f.requester
-    );
+  // 3️⃣ Map to include full friend data + friendship status
+const friends = friendships.map((f) => {
+  const isRequester = f.requester._id.toString() === userId.toString();
 
-    res.json({
-      data: friends,
-      meta: {
-        total,
-        page: Number(page),
-        per_page: Number(per_page),
-        totalPages: Math.ceil(total / Number(per_page)),
-      },
-    });
+  // Pick the actual friend document
+  const friendDoc = isRequester ? f.recipient : f.requester;
+
+  // TypeScript might think friendDoc is ObjectId, so cast it
+  const friend = (friendDoc as any)._doc || friendDoc; // or friendDoc.toObject() if Document
+
+  return {
+    ...friend,
+    friendshipStatus: f.status,
+    isRequester,
+  };
+});
+
+  res.json({
+    data: friends,
+    meta: {
+      total,
+      page: Number(page),
+      per_page: Number(per_page),
+      totalPages: Math.ceil(total / Number(per_page)),
+    },
+  });
 };
 
 

@@ -7,7 +7,7 @@ const router = express.Router();
 router.get("/", authenticate, friendshipController.getFriends);
 router.post("/request/:id", authenticate, isValidId, friendshipController.sendFriendRequest);
 router.post("/accept/:id", authenticate, isValidId, friendshipController.acceptFriendRequest);
-router.delete("/reject/:id", authenticate, isValidId, friendshipController.rejectFriendRequest);
-router.delete("/remove/:id", authenticate, isValidId, friendshipController.removeFriend);
+router.post("/reject/:id", authenticate, isValidId, friendshipController.rejectFriendRequest);
+router.delete("/:id", authenticate, isValidId, friendshipController.removeFriend);
 
 export default router;
