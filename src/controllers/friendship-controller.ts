@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Friendship from '../models/Friendship';
 import cntrWrapper from '../decorators/ctrlWrapper';
+import { HttpError } from '../helpers';
 
 export const getFriends = async (req: Request, res: Response) => {
   const { _id: userId } = req.user;
@@ -12,7 +13,7 @@ export const getFriends = async (req: Request, res: Response) => {
   const friendships = await Friendship.find({
     $or: [{ requester: userId }, { recipient: userId }],
   })
-    .populate('requester recipient', '_id name email avatarURL')
+    .populate('requester recipient', '_id name email avatarURL friendshipStatus')
     .skip(skip)
     .limit(Number(per_page));
 
@@ -60,6 +61,10 @@ export const sendFriendRequest = async (req: Request, res: Response) => {
       { requester: targetId, recipient: userId },
     ],
   });
+
+  if (existing) {
+    throw HttpError(401, 'Friend request already exists or you are already friends');
+  }
 
   const friendship = await Friendship.create({
     requester: userId,
