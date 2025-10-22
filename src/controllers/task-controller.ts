@@ -38,7 +38,7 @@ const addTask = async (req: Request, res: Response) => {
 
 const updateTask = async (req: Request, res: Response) => {
     const { _id: owner } = req.user
-    const { taskId } = req.params
+    const { id: taskId } = req.params
     const updatedTask = await Task.findByIdAndUpdate(
         { _id: taskId, owner },
         req.body,
@@ -52,7 +52,7 @@ const updateTask = async (req: Request, res: Response) => {
 
 const deleteTask = async (req: Request, res: Response) => {
     const { _id: owner } = req.user
-    const { taskId } = req.params
+    const { id: taskId } = req.params
     const deletedTask = await Task.findByIdAndDelete({ _id: taskId, owner })
     if (!deletedTask) {
         throw HttpError(404, `Task with id:${taskId} is not found`)
@@ -143,9 +143,6 @@ const reorderTasks = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: err });
   }
 };
-
-    
-
 
 export default {
     getAllTasks: cntrWrapper(getAllTasks),

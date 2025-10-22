@@ -5,7 +5,7 @@ import cntrWrapper from '../decorators/ctrlWrapper';
 
 const getMessages = async (req: Request, res: Response) => {
     const {owner} = req.user;
-    const { to, page, per_page  } = req.query;
+    const { id: to, page, per_page  } = req.query;
 
     const skip = (Number(page) - 1) * Number(per_page);
 

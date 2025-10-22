@@ -5,11 +5,10 @@ import authRouter from './routes/auth'
 import taskRouter from './routes/task'
 import userRouter from './routes/user'
 import messagesRouter from './routes/message'
+import friendshipRouter from './routes/friend'
 import 'dotenv/config'
 
-
 const app = express()
-
 
 const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short'
 
@@ -22,6 +21,7 @@ app.use('/auth/', authRouter)
 app.use('/tasks/', taskRouter)
 app.use('/users/', userRouter)
 app.use('/messages/', messagesRouter)
+app.use('/friends/', friendshipRouter)
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found' })

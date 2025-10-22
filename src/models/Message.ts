@@ -22,5 +22,5 @@ const messageSchema = new Schema<IMessage>(
 
 messageSchema.post("save", handleSaveError);
 
-export default model<IMessage>('Message', messageSchema);
+export default model<IMessage>('message', messageSchema);
 
