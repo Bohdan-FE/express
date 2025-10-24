@@ -32,7 +32,6 @@ const authenticate = async (req: Request, res: Response, next: NextFunction) => 
       if (error instanceof TokenExpiredError) {
         return next(HttpError(401, "Token has expired"));
     }
-        console.log(error)
         next(HttpError(401))
     }
 }

@@ -13,9 +13,13 @@ const friendshipSchema = new Schema<IFriendship>(
   {
     requester: { type: Schema.Types.ObjectId, ref: 'user', required: true },
     recipient: { type: Schema.Types.ObjectId, ref: 'user', required: true },
-    status: { type: String, enum: ['pending', 'accepted', 'blocked'], default: 'pending' },
+    status: {
+      type: String,
+      enum: ['pending', 'accepted', 'rejected'],
+      default: 'pending',
+    },
   },
-  { timestamps: true }
+  { timestamps: true, versionKey: false }
 );
 
 friendshipSchema.post("save", handleSaveError);
