@@ -4,8 +4,9 @@ import cntrWrapper from '../decorators/ctrlWrapper';
 
 
 const getMessages = async (req: Request, res: Response) => {
-    const {owner} = req.user;
-    const { id: to, page, per_page  } = req.query;
+    const { _id: owner } = req.user;
+    const { page, per_page } = req.query;
+     const { id: to } = req.params
 
     const skip = (Number(page) - 1) * Number(per_page);
 
@@ -14,7 +15,7 @@ const getMessages = async (req: Request, res: Response) => {
             { from: owner, to },
             { from: to, to: owner }
         ]
-    }).sort({ createdAt: 1 }).skip(skip).limit(Number(per_page));
+    }).sort({ createdAt: -1 }).skip(skip).limit(Number(per_page));
 
     const total = await Message.countDocuments({
         $or: [

@@ -4,6 +4,6 @@ import messagesControler from "../controllers/message-controler";
 
 const router = express.Router();
 
-router.get("/", authenticate, messagesControler.getMessages)
+router.get("/:id", authenticate, messagesControler.getMessages)
 
 export default router;
