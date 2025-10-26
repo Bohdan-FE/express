@@ -3,6 +3,7 @@ import { Server, Socket } from 'socket.io';
 import { findUserById } from '../onlineUsers';
 import Message, { MessageStatus } from '../../models/Message';
 
+
 export default function privateMessageHandler(io: Server, socket: Socket) {
   socket.on('privateMessage', async ({ to, message }: { to: string; message: string }) => {
     const from = socket.data.userId;
@@ -10,6 +11,7 @@ export default function privateMessageHandler(io: Server, socket: Socket) {
 
     try {
       const savedMsg = await Message.create({ from, to, message, status: 'sent' });
+      
 
       const target = findUserById(to);
       if (target) {
@@ -19,7 +21,7 @@ export default function privateMessageHandler(io: Server, socket: Socket) {
           from,
           message,
           status: MessageStatus.DELIVERED,
-          timestamp: savedMsg.createdAt,
+          createdAt: savedMsg.createdAt,
         });
       }
 
@@ -28,7 +30,7 @@ export default function privateMessageHandler(io: Server, socket: Socket) {
         from,
         message,
         status: target ? MessageStatus.DELIVERED : MessageStatus.SENT,
-        timestamp: savedMsg.createdAt,
+        createdAt: savedMsg.createdAt,
       });
     } catch (err) {
       console.error('Error saving message:', err);

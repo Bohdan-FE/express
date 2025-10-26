@@ -2,58 +2,18 @@ import { Request, Response } from 'express';
 import Friendship from '../models/Friendship';
 import cntrWrapper from '../decorators/ctrlWrapper';
 import { HttpError } from '../helpers';
-
-export const getFriends = async (req: Request, res: Response) => {
-  const { _id: userId } = req.user;
-  const { page = 1, per_page = 10 } = req.query as { page?: string; per_page?: string };
-
-  const skip = (Number(page) - 1) * Number(per_page);
-
-  // 1️⃣ Find friendships
-  const friendships = await Friendship.find({
-    $or: [{ requester: userId }, { recipient: userId }],
-  })
-    .populate('requester recipient', '_id name email avatarURL')
-    .skip(skip)
-    .limit(Number(per_page));
-
-  // 2️⃣ Count total friendships
-  const total = await Friendship.countDocuments({
-    $or: [{ requester: userId }, { recipient: userId }],
-  });
-
-  // 3️⃣ Map to include full friend data + friendship status
-const friends = friendships.map((f) => {
-  const isRequester = f.requester._id.toString() === userId.toString();
-
-  // Pick the actual friend document
-  const friendDoc = isRequester ? f.recipient : f.requester;
-
-  // TypeScript might think friendDoc is ObjectId, so cast it
-  const friend = (friendDoc as any)._doc || friendDoc; // or friendDoc.toObject() if Document
-
-  return {
-    ...friend,
-    friendshipStatus: f.status,
-    isRequester,
-  };
-});
-
-  res.json({
-    data: friends,
-    meta: {
-      total,
-      page: Number(page),
-      per_page: Number(per_page),
-      totalPages: Math.ceil(total / Number(per_page)),
-    },
-  });
-};
+import User from '../models/User';
 
 
 export const sendFriendRequest = async (req: Request, res: Response) => {
   const { id: targetId } = req.params;
-  const userId = req.user._id;
+  const { _id: userId, name: requesterName } = req.user;
+
+  const targetUser = await User.findById(targetId);
+
+  if (!targetUser) {
+    throw HttpError(404, 'Target user not found');
+  }
 
   const existing = await Friendship.findOne({
     $or: [
@@ -69,6 +29,8 @@ export const sendFriendRequest = async (req: Request, res: Response) => {
   const friendship = await Friendship.create({
     requester: userId,
     recipient: targetId,
+    recipientName: targetUser?.name,
+    requesterName,
     status: 'pending',
   });
 
@@ -131,7 +93,6 @@ export const removeFriend = async (req: Request, res: Response) => {
 
 
 export default {
-    getFriends: cntrWrapper(getFriends),
     sendFriendRequest: cntrWrapper(sendFriendRequest),
     acceptFriendRequest: cntrWrapper(acceptFriendRequest),
     rejectFriendRequest: cntrWrapper(rejectFriendRequest),

@@ -3,6 +3,7 @@ import privateMessageHandler from './handlers/privateMessageHandler'
 import messageStatusHandler from './handlers/messageStatusHandler'
 import disconnectHandler from './handlers/disconnectHandler'
 import registerHandler from './handlers/registerHandler'
+import typingHandler from './handlers/typingHandler'
 
 
 export const registerSocketHandlers = (io: Server) => {
@@ -10,11 +11,12 @@ export const registerSocketHandlers = (io: Server) => {
     console.log('🔥 New user connected:', socket.id)
 
   socket.on('register', async (token: string) => {
-    await registerHandler(socket, token);
+    await registerHandler(io, socket, token );
   });
   privateMessageHandler(io, socket);
   messageStatusHandler(io, socket);
-  disconnectHandler(socket);
+  typingHandler(io, socket);
+  disconnectHandler(io, socket);
 
 
     socket.on('disconnect', () => {

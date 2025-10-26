@@ -58,18 +58,20 @@ const getCurrent = async (req: Request, res: Response) => {
         email,
         name,
         _id: id,
-        avatarURL
+        avatarURL,
+        isOnline: req.user.isOnline,
+        lastSeen: req.user.lastSeen
     })
 }
 
 const logout = async (req: Request, res: Response) => {
-    const { _id } = req.body.user
+    const { _id } = req.user
     await User.findByIdAndUpdate(_id, { token: '' })
     res.status(204).json()
 }
 
 const updateAvatar = async (req: Request, res: Response) => {
-    const { _id } = req.body.user
+    const { _id } = req.user
     const { path: tempUpload, originalname } = req.body.file
     const newFileName = `${_id}_${originalname}`
     const resultUpload = path.join(avatarDir, newFileName)
