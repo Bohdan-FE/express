@@ -1,7 +1,10 @@
+import { match } from "assert";
 import cntrWrapper from "../decorators/ctrlWrapper";
 import Friendship from "../models/Friendship";
 import User from "../models/User";
 import { Request, Response } from 'express'
+import { PipelineStage } from "mongoose";
+import { relative } from "path";
 
 
 const getUsers = async (req: Request, res: Response) => {
@@ -11,351 +14,164 @@ const getUsers = async (req: Request, res: Response) => {
     per_page = "10",
     filter = "all",
     search = "",
-  } = req.query as {
-    page?: string;
-    per_page?: string;
-    filter?: "all" | "friends" | "non-friends" | "request_sent" | "request_received";
-    search?: string;
-  };
+  } = req.query;
 
   const skip = (Number(page) - 1) * Number(per_page);
   const limit = Number(per_page);
 
+  const pipeline: PipelineStage[] = [
 
-  // --- 1️⃣ FRIENDS FILTER ---
-  if (filter === "friends") {
-    const searchCondition = search
-      ? {
-        $or: [
-          { requesterName: { $regex: search, $options: "i" } },
-          { recipientName: { $regex: search, $options: "i" } },
+    { $match: { _id: { $ne: owner } } },
+
+    ...(search
+      ? [
+        {
+          $match: {
+            $or: [
+              { name: { $regex: search, $options: "i" } },
+              { email: { $regex: search, $options: "i" } },
+            ],
+          },
+        },
+      ]
+      : []),
+
+    {
+      $lookup: {
+        from: "friendships",
+        let: { userId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $or: [
+                  {
+                    $and: [
+                      { $eq: ["$requester", "$$userId"] },
+                      { $eq: ["$recipient", owner] },
+                    ],
+                  },
+                  {
+                    $and: [
+                      { $eq: ["$recipient", "$$userId"] },
+                      { $eq: ["$requester", owner] },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
         ],
-      }
-      : {};
+        as: "friendship",
+      },
+    },
 
-    const friendships = await Friendship.aggregate([
+    // 4️⃣ Разворачиваем массив
+    { $unwind: { path: "$friendship", preserveNullAndEmptyArrays: true } },
+
+    // 5️⃣ Добавляем удобные поля
+    {
+      $addFields: {
+        friendshipStatus: "$friendship.status",
+        relationshipId: "$friendship._id",
+        requester: "$friendship.requester",
+        recipient: "$friendship.recipient",
+        relationshipStatus: {
+          $switch: {
+            branches: [
+              {
+                case: { $eq: ["$friendship", null] },
+                then: "none"
+              },
+              {
+                case: { $and: [{ $eq: ["$friendship.status", "accepted"] }] },
+                then: "friend"
+              },
+              {
+                case: { $eq: ["$friendship.requester", owner] },
+                then: "request_sent"
+              },
+              {
+                case: { $eq: ["$friendship.recipient", owner] },
+                then: "request_received"
+              },
+            ],
+            default: "none"
+          }
+        }
+      },
+    },
+  ];
+
+  if (filter === "friends") {
+    pipeline.push({ $match: { friendshipStatus: "accepted" } });
+  } else if (filter === "request_sent") {
+    pipeline.push({
+      $match: {
+        requester: owner,
+        friendshipStatus: "pending",
+      },
+    });
+  } else if (filter === "request_received") {
+    pipeline.push({
+      $match: {
+        recipient: owner,
+        friendshipStatus: "pending",
+      },
+    });
+  } else if (filter === "non-friends") {
+    pipeline.push({ $match: { friendshipStatus: null } });
+  }
+
+  pipeline.push({ $lookup: {
+    from: "messages",
+    let: { userId: "$_id" },
+    pipeline: [
       {
         $match: {
-          $and: [
-            { status: "accepted" },
-            { $or: [{ requester: owner }, { recipient: owner }] },
-            searchCondition,
-          ],
-        },
-      },
-      {
-        $project: {
-          friendId: {
-            $cond: [{ $eq: ["$requester", owner] }, "$recipient", "$requester"],
+          $expr: {
+            $or: [
+              {
+                $and: [   
+                  { $eq: ["$from", "$$userId"] },
+                  { $eq: ["$to", owner] },
+                ],
+              },
+              {
+                $and: [
+                  { $eq: ["$to", "$$userId"] },
+                  { $eq: ["$from", owner] },
+                ],
+              },
+            ],
           },
         },
       },
-      {
-        $lookup: {
-          from: 'messages',
-          let: { friendId: '$friendId' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $or: [
-                    { $and: [{ $eq: ['$from', owner] }, { $eq: ['$to', '$$friendId'] }] },
-                    { $and: [{ $eq: ['$from', '$$friendId'] }, { $eq: ['$to', owner] }] }
-                  ]
-                }
-              }
-            },
-            { $sort: { createdAt: -1 } },
-            { $limit: 1 },
-          ],
-          as: 'lastMessage'
-        }
-      },
-      { $unwind: { path: "$lastMessage", preserveNullAndEmptyArrays: true } },
-      { $sort: { "lastMessage.createdAt": -1, "_id": 1 } },
-      { $skip: skip },
-      { $limit: limit },
-    ]);
+      { $sort: { createdAt: -1 } },
+      { $limit: 1 }
+    ],
+    as: "lastMessage",
+  },
+},  { $unwind: { path: "$lastMessage", preserveNullAndEmptyArrays: true } });
 
-    const friendIds = friendships.map((f) => f.friendId);
-
-    const users = await User.find(
-      { _id: { $in: friendIds } },
-      "_id name email avatarURL isOnline lastSeen"
-    );
-
-    const sortedUsers = friendIds.map(id =>
-      users.find(u => u._id.toString() === id.toString())
-    ).filter(u => u !== undefined);
-
-    const total = await Friendship.countDocuments({
-      status: "accepted",
-      $or: [{ requester: owner }, { recipient: owner }],
-      ...searchCondition,
-    });
-
-    res.json({
-      data: sortedUsers.map((u) => ({ ...u.toObject(), relationshipStatus: "friend" })),
-      meta: {
-        total,
-        page: Number(page),
-        per_page: limit,
-        totalPages: Math.ceil(total / limit),
-        filter,
-        search,
-      },
-    });
-    return;
-  }
-
-  // --- 2️⃣ REQUEST_SENT FILTER ---
-  if (filter === "request_sent") {
-    const searchCondition = search
-      ? { recipientName: { $regex: search, $options: "i" } }
-      : {};
-
-    const friendships = await Friendship.aggregate([
-      { $match: { requester: owner, status: "pending", ...searchCondition } },
-      {
-        $project: {
-          recipient: 1,
-        },
-      },
-      {
-        $lookup: {
-          from: 'messages',
-        let: { friendId: '$friendId' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $or: [
-                    { $and: [{ $eq: ['$from', owner] }, { $eq: ['$to', '$$friendId'] }] },
-                    { $and: [{ $eq: ['$from', '$$friendId'] }, { $eq: ['$to', owner] }] }
-                  ]
-                }
-              }
-            },
-            { $sort: { createdAt: -1 } },
-            { $limit: 1 },
-          ],
-          as: 'lastMessage'
-        }
-      },
-      { $unwind: { path: "$lastMessage", preserveNullAndEmptyArrays: true } },
-      { $sort: { "lastMessage.createdAt": -1 } },
-      { $skip: skip },
-      { $limit: limit },
-    ]
-    );
-
-    const targetIds = friendships.map((f) => f.recipient);
-
-    const users = await User.find(
-      { _id: { $in: targetIds } },
-      "_id name email avatarURL isOnline lastSeen"
-    );
-
-    const sortedUsers = targetIds.map(id =>
-      users.find(u => u._id.toString() === id.toString())
-    ).filter(u => u !== undefined);
-
-    const total = await Friendship.countDocuments({
-      requester: owner,
-      status: "pending",
-      ...searchCondition,
-    });
-
-    res.json({
-      data: sortedUsers.map((u) => ({
-        ...u.toObject(),
-        relationshipStatus: "request_sent",
-      })),
-      meta: {
-        total,
-        page: Number(page),
-        per_page: limit,
-        totalPages: Math.ceil(total / limit),
-        filter,
-        search,
-      },
-    });
-    return;
-  }
-
-  // --- 3️⃣ REQUEST_RECEIVED FILTER ---
-  if (filter === "request_received") {
-    const searchCondition = search
-      ? { requesterName: { $regex: search, $options: "i" } }
-      : {};
-
-    const friendships = await Friendship.aggregate([
-      { $match: { recipient: owner, status: "pending", ...searchCondition } },
-      {
-        $project: {
-          requester: 1,
-        },
-      },
-      {
-        $lookup: {
-          from: 'messages',
-         let: { friendId: '$friendId' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $or: [
-                    { $and: [{ $eq: ['$from', owner] }, { $eq: ['$to', '$$friendId'] }] },
-                    { $and: [{ $eq: ['$from', '$$friendId'] }, { $eq: ['$to', owner] }] }
-                  ]
-                }
-              }
-            },
-            { $sort: { createdAt: -1 } },
-            { $limit: 1 },
-          ],
-          as: 'lastMessage'
-        }
-      },
-      { $unwind: { path: "$lastMessage", preserveNullAndEmptyArrays: true } },
-      { $sort: { "lastMessage.createdAt": -1 } },
-      { $skip: skip },
-      { $limit: limit },
-    ]);
-
-    const targetIds = friendships.map((f) => f.requester);
-
-    const users = await User.find(
-      { _id: { $in: targetIds } },
-      "_id name email avatarURL isOnline lastSeen"
-    );
-
-    const sortedUsers = targetIds.map(id =>
-      users.find(u => u._id.toString() === id.toString())
-    ).filter(u => u !== undefined);
-
-    const total = await Friendship.countDocuments({
-      recipient: owner,
-      status: "pending",
-      ...searchCondition,
-    });
-
-    res.json({
-      data: sortedUsers.map((u) => ({
-        ...u.toObject(),
-        relationshipStatus: "request_received",
-      })),
-      meta: {
-        total,
-        page: Number(page),
-        per_page: limit,
-        totalPages: Math.ceil(total / limit),
-        filter,
-        search,
-      },
-    });
-    return;
-  }
-
-  // --- 4️⃣ NON-FRIENDS + ALL ---
-      const searchCondition = search
-      ? { requesterName: { $regex: search, $options: "i" } }
-      : {};
-
-      
-  const friendships = await Friendship.aggregate([
-    { $match: { $or: [{ requester: owner }, { recipient: owner }], ...searchCondition } },
-    {
-      $lookup: {
-      from: 'messages',
-      let: { friendId: '$friendId' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $or: [
-                    { $and: [{ $eq: ['$from', owner] }, { $eq: ['$to', '$$friendId'] }] },
-                    { $and: [{ $eq: ['$from', '$$friendId'] }, { $eq: ['$to', owner] }] }
-                  ]
-                }
-              }
-            },
-          { $sort: { createdAt: -1 } },
-          { $limit: 1 },
-        ],
-        as: 'lastMessage'
-      }
+  pipeline.push({
+    $project: {
+      password: 0,
+      token: 0,
     },
-    { $sort: { "lastMessage.createdAt": -1, "_id": 1 } },
-    { $skip: skip },
-    { $limit: limit },
-  ]);
-
-  const friendshipMap = new Map<string, { status: string; isRequester: boolean }>();
-  const friendIds = new Set<string>();
-
-    const targetIds = friendships.map((f) => f.recipient);
-
-  for (const f of friendships) {
-    const friendId =
-      f.requester.toString() === owner.toString()
-        ? f.recipient.toString()
-        : f.requester.toString();
-
-    friendshipMap.set(friendId, {
-      status: f.status,
-      isRequester: f.requester.toString() === owner.toString(),
-    });
-
-    if (f.status === "accepted") friendIds.add(friendId);
-  }
-
-  const userQuery: Record<string, any> = {
-    _id: { $ne: owner },
-    ...(search ? { name: { $regex: search, $options: "i" } } : {}),
-  };
-
-  if (filter === "non-friends") {
-    userQuery._id.$nin = Array.from(friendIds);
-  }
-
-
- const users = await User.find(userQuery, "_id name email avatarURL isOnline lastSeen");
- const total = await User.countDocuments(userQuery);
-
- const sortedUsers = targetIds.map(id =>
-      users.find(u => u._id.toString() === id.toString())
-    ).filter(u => u !== undefined);
-
-  const enrichedUsers = sortedUsers.map((user) => {
-    const relation = friendshipMap.get(user._id.toString());
-    let relationshipStatus: string = "none";
-
-    if (relation) {
-      switch (relation.status) {
-        case "accepted":
-          relationshipStatus = "friend";
-          break;
-        case "pending":
-          relationshipStatus = relation.isRequester
-            ? "request_sent"
-            : "request_received";
-          break;
-      }
-    }
-
-    return { ...user.toObject(), relationshipStatus };
   });
 
-  res.json({
-    data: enrichedUsers,
+  pipeline.push({ $skip: skip }, { $limit: limit }, { $sort: { "lastMessage.createdAt": -1 } });
+
+  const users = await User.aggregate(pipeline);
+
+  res.status(200).json({
+    data: users,
     meta: {
-      total,
       page: Number(page),
-      per_page: limit,
-      totalPages: Math.ceil(total / limit),
-      filter,
-      search,
+      per_page: Number(per_page),
+      total: users.length,
+      totalPages: Math.ceil(users.length / limit),
     },
   });
 };
