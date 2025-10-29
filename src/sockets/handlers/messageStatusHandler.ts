@@ -1,6 +1,6 @@
-import { Server, Socket } from 'socket.io';
-import { findUserById } from '../onlineUsers';
 import Message, { MessageStatus } from '../../models/Message';
+import { findUserById } from '../onlineUsers';
+import { Server, Socket } from 'socket.io';
 
 export default function messageStatusHandler(io: Server, socket: Socket) {
   socket.on('messageRead', async (messageId: string) => {
@@ -8,11 +8,12 @@ export default function messageStatusHandler(io: Server, socket: Socket) {
     if (!userId) return;
 
     try {
-      const msg = await Message.findById(messageId);
+      const msg = await Message.findByIdAndUpdate(
+        messageId,
+        { status: MessageStatus.READ },
+        { new: true },
+      );
       if (!msg || msg.to !== userId) return;
-
-      msg.status = MessageStatus.READ;
-      await msg.save();
 
       const sender = findUserById(msg.from.toString());
       if (sender) {
