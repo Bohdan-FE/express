@@ -13,15 +13,27 @@ export default function messageStatusHandler(io: Server, socket: Socket) {
         { status: MessageStatus.READ },
         { new: true },
       );
-      if (!msg || msg.to !== userId) return;
+
+      console.log(
+        'Updated message status to READ for message:',
+        msg?.to,
+        userId,
+      );
+
+      if (!msg || msg.to.toString() !== userId) return;
 
       const sender = findUserById(msg.from.toString());
+
       if (sender) {
         io.to(sender.socketId).emit('messageStatusUpdate', {
           messageId,
           status: MessageStatus.READ,
         });
       }
+      socket.emit('messageStatusUpdate', {
+        messageId,
+        status: MessageStatus.READ,
+      });
     } catch (err) {
       console.error('Error updating message status:', err);
     }
