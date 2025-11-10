@@ -1,7 +1,5 @@
 import cntrWrapper from '../decorators/ctrlWrapper';
-import Friendship from '../models/Friendship';
 import User from '../models/User';
-import { match } from 'assert';
 import { Request, Response } from 'express';
 import { PipelineStage } from 'mongoose';
 

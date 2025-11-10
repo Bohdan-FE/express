@@ -1,9 +1,8 @@
-import { Request, Response } from 'express';
-import Friendship from '../models/Friendship';
 import cntrWrapper from '../decorators/ctrlWrapper';
 import { HttpError } from '../helpers';
+import Friendship from '../models/Friendship';
 import User from '../models/User';
-
+import { Request, Response } from 'express';
 
 export const sendFriendRequest = async (req: Request, res: Response) => {
   const { id: targetId } = req.params;
@@ -23,7 +22,10 @@ export const sendFriendRequest = async (req: Request, res: Response) => {
   });
 
   if (existing) {
-    throw HttpError(401, 'Friend request already exists or you are already friends');
+    throw HttpError(
+      401,
+      'Friend request already exists or you are already friends',
+    );
   }
 
   const friendship = await Friendship.create({
@@ -40,7 +42,6 @@ export const sendFriendRequest = async (req: Request, res: Response) => {
   });
 };
 
-
 export const acceptFriendRequest = async (req: Request, res: Response) => {
   const { id: requesterId } = req.params;
   const userId = req.user._id;
@@ -48,7 +49,7 @@ export const acceptFriendRequest = async (req: Request, res: Response) => {
   const friendship = await Friendship.findOneAndUpdate(
     { requester: requesterId, recipient: userId, status: 'pending' },
     { status: 'accepted' },
-    { new: true }
+    { new: true },
   );
 
   res.json({
@@ -62,7 +63,7 @@ export const rejectFriendRequest = async (req: Request, res: Response) => {
   const userId = req.user._id;
 
   await Friendship.findOneAndDelete({
-   $or: [
+    $or: [
       { requester: userId, recipient: requesterId },
       { requester: requesterId, recipient: userId },
     ],
@@ -91,10 +92,9 @@ export const removeFriend = async (req: Request, res: Response) => {
   });
 };
 
-
 export default {
-    sendFriendRequest: cntrWrapper(sendFriendRequest),
-    acceptFriendRequest: cntrWrapper(acceptFriendRequest),
-    rejectFriendRequest: cntrWrapper(rejectFriendRequest),
-    removeFriend: cntrWrapper(removeFriend),
-}
+  sendFriendRequest: cntrWrapper(sendFriendRequest),
+  acceptFriendRequest: cntrWrapper(acceptFriendRequest),
+  rejectFriendRequest: cntrWrapper(rejectFriendRequest),
+  removeFriend: cntrWrapper(removeFriend),
+};

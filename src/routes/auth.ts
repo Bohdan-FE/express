@@ -1,19 +1,36 @@
-import express from 'express'
-import { validateBody } from '../decorators'
-import authController from '../controllers/auth-controller'
-import { loginSchema, registerSchema } from '../models/User'
-import { authenticate, isEmptyBody, upload } from '../middlewares'
+import authController from '../controllers/auth-controller';
+import { validateBody } from '../decorators';
+import { authenticate, isEmptyBody, upload } from '../middlewares';
+import { loginSchema, registerSchema } from '../models/User';
+import express from 'express';
 
-const router = express.Router()
+const router = express.Router();
 
-router.post('/register', isEmptyBody, validateBody(registerSchema), authController.register)
+router.post(
+  '/register',
+  isEmptyBody,
+  validateBody(registerSchema),
+  authController.register,
+);
 
-router.post('/login', isEmptyBody, validateBody(loginSchema), authController.login)
+router.post(
+  '/login',
+  isEmptyBody,
+  validateBody(loginSchema),
+  authController.login,
+);
 
-router.get('/current', authenticate, authController.getCurrent)
+router.get('/current', authenticate, authController.getCurrent);
 
-router.post('/logout', authenticate, authController.logout)
+router.post('/logout', authenticate, authController.logout);
 
-router.patch('/avatars', authenticate, upload.single('avatar'), authController.updateAvatar)
+router.patch(
+  '/avatars',
+  authenticate,
+  upload.single('avatar'),
+  authController.updateAvatar,
+);
 
-export default router
+router.post('/google', isEmptyBody, authController.googleAuth);
+
+export default router;

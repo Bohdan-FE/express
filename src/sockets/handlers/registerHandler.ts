@@ -1,9 +1,14 @@
+import { TypedSocket } from '..';
+import User from '../../models/User';
+import { addOnlineUser } from '../onlineUsers';
 import jwt, { TokenExpiredError } from 'jsonwebtoken';
 import { Server, Socket } from 'socket.io';
-import { addOnlineUser } from '../onlineUsers';
-import User from '../../models/User';
 
-export default async function registerHandler(io: Server, socket: Socket, token: string ) {
+export default async function registerHandler(
+  io: Server,
+  socket: TypedSocket,
+  token: string,
+) {
   try {
     if (!process.env.SECRET_KEY) {
       throw new Error('SECRET_KEY is not defined');
@@ -19,6 +24,7 @@ export default async function registerHandler(io: Server, socket: Socket, token:
     }
 
     socket.data.userId = user.id;
+    socket.data.userName = user.name;
 
     addOnlineUser(user.id, socket.id);
 

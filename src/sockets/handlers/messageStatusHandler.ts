@@ -14,12 +14,6 @@ export default function messageStatusHandler(io: Server, socket: Socket) {
         { new: true },
       );
 
-      console.log(
-        'Updated message status to READ for message:',
-        msg?.to,
-        userId,
-      );
-
       if (!msg || msg.to.toString() !== userId) return;
 
       const sender = findUserById(msg.from.toString());
