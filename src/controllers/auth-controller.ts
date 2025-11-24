@@ -1,5 +1,6 @@
 import { ctrlWrapper } from '../decorators';
 import { HttpError } from '../helpers';
+import { deleteFromS3 } from '../middlewares/';
 import User from '../models/User';
 import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
@@ -49,7 +50,7 @@ const login = async (req: Request, res: Response) => {
     token,
     email: user.email,
     name: user.name,
-    id: user._id,
+    _id: user._id,
     avatarURL: user.avatarURL,
   });
 };
@@ -72,21 +73,83 @@ const logout = async (req: Request, res: Response) => {
   res.status(204).json();
 };
 
-const updateAvatar = async (req: Request, res: Response) => {
+// const updateAvatar = async (req: Request, res: Response) => {
+//   const { _id } = req.user;
+//   const { path: tempUpload, originalname } = req.body.file;
+//   const newFileName = `${_id}_${originalname}`;
+//   const resultUpload = path.join(avatarDir, newFileName);
+
+//   const file = await (Jimp as any).read(tempUpload);
+//   await file.resize(250, 250).writeAsync(tempUpload);
+
+//   await fs.rename(tempUpload, resultUpload);
+
+//   const avatarURL = path.join('avatars', newFileName);
+//   await User.findByIdAndUpdate(_id, { avatarURL });
+
+//   res.json({
+//     avatarURL,
+//   });
+
+//   if (!req.file || !(req.file as any).location) {
+//     throw HttpError(400, 'No file uploaded');
+//   }
+
+//   await User.findByIdAndUpdate(req.user._id, {
+//     avatarURL: (req.file as any).location,
+//   });
+
+//   res.json({
+//     url: (req.file as any).location,
+//   });
+// };
+
+const updateUser = async (req: Request, res: Response) => {
   const { _id } = req.user;
-  const { path: tempUpload, originalname } = req.body.file;
-  const newFileName = `${_id}_${originalname}`;
-  const resultUpload = path.join(avatarDir, newFileName);
+  const { email, name } = req.body;
 
-  const file = await (Jimp as any).read(tempUpload);
-  await file.resize(250, 250).writeAsync(tempUpload);
+  const user = await User.findById(_id);
+  if (!user) throw HttpError(404, 'User not found');
 
-  await fs.rename(tempUpload, resultUpload);
+  const updateData: {
+    email?: string;
+    name?: string;
+    avatarURL?: string;
+  } = {};
 
-  const avatarURL = path.join('avatars', newFileName);
-  await User.findByIdAndUpdate(_id, { avatarURL });
+  if (email && email !== user.email) {
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      throw HttpError(409, 'Email already in use');
+    }
+    updateData.email = email;
+  }
+
+  if (name && name !== user.name) {
+    const existingName = await User.findOne({ name });
+    if (existingName) {
+      throw HttpError(409, 'Name already in use');
+    }
+    updateData.name = name;
+  }
+
+  if (req.file && (req.file as any).location) {
+    if (user.avatarURL) {
+      await deleteFromS3(user.avatarURL);
+    }
+
+    updateData.avatarURL = (req.file as any).location;
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(_id, updateData, {
+    new: true,
+  });
+
   res.json({
-    avatarURL,
+    _id: updatedUser!._id,
+    email: updatedUser!.email,
+    name: updatedUser!.name,
+    avatarURL: updatedUser!.avatarURL,
   });
 };
 
@@ -136,6 +199,6 @@ export default {
   login: ctrlWrapper(login),
   getCurrent: ctrlWrapper(getCurrent),
   logout: ctrlWrapper(logout),
-  updateAvatar: ctrlWrapper(updateAvatar),
+  updateUser: ctrlWrapper(updateUser),
   googleAuth: ctrlWrapper(googleAuth),
 };

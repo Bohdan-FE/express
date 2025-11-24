@@ -24,13 +24,20 @@ router.get('/current', authenticate, authController.getCurrent);
 
 router.post('/logout', authenticate, authController.logout);
 
-router.patch(
-  '/avatars',
-  authenticate,
-  upload.single('avatar'),
-  authController.updateAvatar,
-);
+// router.patch(
+//   '/avatars',
+//   authenticate,
+//   upload.single('avatar'),
+//   authController.updateAvatar,
+// );
 
 router.post('/google', isEmptyBody, authController.googleAuth);
+
+router.patch(
+  '/update',
+  authenticate,
+  upload.single('avatar'),
+  authController.updateUser,
+);
 
 export default router;
