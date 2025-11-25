@@ -4,13 +4,8 @@ import { deleteFromS3 } from '../middlewares/';
 import User from '../models/User';
 import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
-import fs from 'fs/promises';
 import gravatar from 'gravatar';
-import * as Jimp from 'jimp';
 import jwt from 'jsonwebtoken';
-import path from 'path';
-
-const avatarDir = path.resolve('public', 'avatars');
 
 const register = async (req: Request, res: Response) => {
   const { email, password, name } = req.body;
@@ -20,7 +15,11 @@ const register = async (req: Request, res: Response) => {
   }
   const hashPassword = await bcrypt.hash(password, 10);
   const avatarURL = gravatar.url(email);
-  const newUser = await User.create({ ...req.body, password: hashPassword });
+  const newUser = await User.create({
+    ...req.body,
+    password: hashPassword,
+    avatarURL,
+  });
   res.status(201).json({
     email: newUser.email,
     avatarURL,
@@ -73,42 +72,10 @@ const logout = async (req: Request, res: Response) => {
   res.status(204).json();
 };
 
-// const updateAvatar = async (req: Request, res: Response) => {
-//   const { _id } = req.user;
-//   const { path: tempUpload, originalname } = req.body.file;
-//   const newFileName = `${_id}_${originalname}`;
-//   const resultUpload = path.join(avatarDir, newFileName);
-
-//   const file = await (Jimp as any).read(tempUpload);
-//   await file.resize(250, 250).writeAsync(tempUpload);
-
-//   await fs.rename(tempUpload, resultUpload);
-
-//   const avatarURL = path.join('avatars', newFileName);
-//   await User.findByIdAndUpdate(_id, { avatarURL });
-
-//   res.json({
-//     avatarURL,
-//   });
-
-//   if (!req.file || !(req.file as any).location) {
-//     throw HttpError(400, 'No file uploaded');
-//   }
-
-//   await User.findByIdAndUpdate(req.user._id, {
-//     avatarURL: (req.file as any).location,
-//   });
-
-//   res.json({
-//     url: (req.file as any).location,
-//   });
-// };
-
 const updateUser = async (req: Request, res: Response) => {
-  const { _id } = req.user;
-  const { email, name } = req.body;
+  const user = req.user;
+  const { oldPassword, newPassword, name } = req.body;
 
-  const user = await User.findById(_id);
   if (!user) throw HttpError(404, 'User not found');
 
   const updateData: {
@@ -117,12 +84,13 @@ const updateUser = async (req: Request, res: Response) => {
     avatarURL?: string;
   } = {};
 
-  if (email && email !== user.email) {
-    const existingEmail = await User.findOne({ email });
-    if (existingEmail) {
-      throw HttpError(409, 'Email already in use');
+  if (oldPassword && newPassword) {
+    const passwordMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!passwordMatch) {
+      throw HttpError(401, 'Old password is incorrect');
     }
-    updateData.email = email;
+    const hashPassword = await bcrypt.hash(newPassword, 10);
+    await User.findByIdAndUpdate(user._id, { password: hashPassword });
   }
 
   if (name && name !== user.name) {
@@ -141,7 +109,7 @@ const updateUser = async (req: Request, res: Response) => {
     updateData.avatarURL = (req.file as any).location;
   }
 
-  const updatedUser = await User.findByIdAndUpdate(_id, updateData, {
+  const updatedUser = await User.findByIdAndUpdate(user._id, updateData, {
     new: true,
   });
 

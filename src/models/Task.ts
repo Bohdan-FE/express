@@ -1,58 +1,58 @@
-import { model, Schema, Types } from "mongoose";
-import { handleSaveError } from "./hooks";
-import Joi from "joi";
+import { handleSaveError } from './hooks';
+import Joi from 'joi';
+import { model, Schema, Types } from 'mongoose';
 
 const taskSchema = new Schema(
   {
     title: {
-        type: String,
-        require: [true, 'Title is required']
+      type: String,
+      require: [true, 'Title is required'],
     },
     description: {
       type: String,
     },
     index: {
       type: Number,
-      required: [true, "Index is required"],
+      required: [true, 'Index is required'],
     },
     status: {
       type: String,
-      enum: ["todo", "in_progress", "done"],
-      default: "todo",
+      enum: ['todo', 'in_progress', 'done'],
+      default: 'todo',
       required: true,
     },
     date: {
       type: Date,
-      required: [true, "Date is required"],
+      required: [true, 'Date is required'],
     },
     owner: {
       type: Types.ObjectId,
-      ref: "user",
+      ref: 'user',
       required: true,
     },
   },
-  { versionKey: false, timestamps: true }
+  { versionKey: false, timestamps: true },
 );
 
-taskSchema.post("save", handleSaveError);
+taskSchema.post('save', handleSaveError);
 
-const Task = model("task", taskSchema);
+const Task = model('task', taskSchema);
 
 export const createTaskSchema = Joi.object({
   title: Joi.string().required(),
-  description: Joi.string(),
+  description: Joi.string().allow(''),
   index: Joi.number().required(),
   date: Joi.date().required(),
-  status: Joi.string().valid("todo", "in_progress", "done").default("todo"),
+  status: Joi.string().valid('todo', 'in_progress', 'done').default('todo'),
 });
 
 export const updateTaskSchema = Joi.object({
-title: Joi.string(),
+  title: Joi.string(),
   description: Joi.string(),
   index: Joi.number(),
   date: Joi.date(),
-  status: Joi.string().valid("todo", "in_progress", "done"),
-}).or("description", "index", "date", "status");
+  status: Joi.string().valid('todo', 'in_progress', 'done'),
+}).or('description', 'index', 'date', 'status');
 
 export const reorderTasksSchema = Joi.object({
   tasks: Joi.array()
@@ -60,8 +60,8 @@ export const reorderTasksSchema = Joi.object({
       Joi.object({
         taskId: Joi.string().required(),
         index: Joi.number().required(),
-        status: Joi.string().valid("todo", "in_progress", "done"),
-      }).required()
+        status: Joi.string().valid('todo', 'in_progress', 'done'),
+      }).required(),
     )
     .required(),
 });
