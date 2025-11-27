@@ -1,4 +1,5 @@
 import cntrWrapper from '../decorators/ctrlWrapper';
+import { HttpError } from '../helpers';
 import Message from '../models/Message';
 import { Request, Response } from 'express';
 
@@ -48,7 +49,18 @@ const getUnreadMessagesCount = async (req: Request, res: Response) => {
   res.json({ unreadCount: count });
 };
 
+const uploadMessageImage = async (req: Request, res: Response) => {
+  if (!req.file) {
+    throw HttpError(409, 'File not uploaded');
+  }
+
+  res.status(201).json({
+    imageUrl: (req.file as any).location,
+  });
+};
+
 export default {
   getMessages: cntrWrapper(getMessages),
   getUnreadMessagesCount: cntrWrapper(getUnreadMessagesCount),
+  uploadMessageImage: cntrWrapper(uploadMessageImage),
 };

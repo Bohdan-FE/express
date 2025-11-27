@@ -1,6 +1,6 @@
 import authController from '../controllers/auth-controller';
 import { validateBody } from '../decorators';
-import { authenticate, isEmptyBody, upload } from '../middlewares';
+import { authenticate, isEmptyBody, uploadAvatar } from '../middlewares';
 import { loginSchema, registerSchema } from '../models/User';
 import express from 'express';
 
@@ -36,7 +36,7 @@ router.post('/google', isEmptyBody, authController.googleAuth);
 router.patch(
   '/update',
   authenticate,
-  upload.single('avatar'),
+  uploadAvatar.single('avatar'),
   authController.updateUser,
 );
 

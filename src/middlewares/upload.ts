@@ -10,13 +10,24 @@ const s3 = new S3Client({
   },
 });
 
-export const upload = multer({
+export const uploadAvatar = multer({
   storage: multerS3({
     s3: s3,
     bucket: 'user-avatars-narutodashboard',
     key: (req, file, cb) => {
       const ext = file.originalname.split('.').pop();
       cb(null, `avatars/${Date.now()}.${ext}`);
+    },
+  }),
+});
+
+export const uploadMessageImage = multer({
+  storage: multerS3({
+    s3: s3,
+    bucket: 'user-avatars-narutodashboard',
+    key: (req, file, cb) => {
+      const ext = file.originalname.split('.').pop();
+      cb(null, `messages/${Date.now()}.${ext}`);
     },
   }),
 });
