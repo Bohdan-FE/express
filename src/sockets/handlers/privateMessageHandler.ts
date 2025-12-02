@@ -27,6 +27,10 @@ export default function privateMessageHandler(io: Server, socket: Socket) {
         });
 
         const target = findUserById(to);
+
+        console.log(
+          `Private message from ${from} to ${to}: ${message || '[image]'}`,
+        );
         if (target) {
           await Message.findByIdAndUpdate(savedMsg._id, {
             status: MessageStatus.DELIVERED,
