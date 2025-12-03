@@ -1,12 +1,21 @@
 import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import dotenv from 'dotenv';
 import multer from 'multer';
 import multerS3 from 'multer-s3';
+
+dotenv.config();
+
+const { AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY } = process.env;
+
+if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY) {
+  throw new Error('AWS credentials are not set in environment variables');
+}
 
 const s3 = new S3Client({
   region: 'eu-north-1',
   credentials: {
-    accessKeyId: 'AKIAUA3XRWTQX2VCRT7V',
-    secretAccessKey: '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',
+    accessKeyId: AWS_ACCESS_KEY_ID,
+    secretAccessKey: AWS_SECRET_ACCESS_KEY,
   },
 });
 
