@@ -1,32 +1,32 @@
+import app from './src/app';
+import { registerSocketHandlers } from './src/sockets';
+import { createServer } from 'http';
+import mongoose from 'mongoose';
+import { Server } from 'socket.io';
 
-import mongoose from 'mongoose'
-import app from './src/app'
-import { Server } from 'socket.io'
-import { createServer } from 'http'
-import { registerSocketHandlers } from './src/sockets'
+const { DB_HOST = '', PORT = 3000 } = process.env;
 
-const { DB_HOST = '', PORT = 3000 } = process.env
-
-mongoose.connect(DB_HOST, {
-  dbName: 'db-dashboard',
-})
+mongoose
+  .connect(DB_HOST, {
+    dbName: 'db-dashboard',
+  })
   .then(() => {
-    console.log('Database connection successful')
+    console.log('Database connection successful');
 
     const server = createServer(app);
     const io = new Server(server, {
       cors: {
-        origin: "*", 
+        origin: '*',
       },
     });
 
-    registerSocketHandlers(io)
+    registerSocketHandlers(io);
 
-    server.listen(PORT, () => {
-    console.log(`Server running. Use our API on port: ${PORT}`)
-    })
+    server.listen(Number(PORT), '0.0.0.0', () => {
+      console.log(`Server running. Use our API on port: ${PORT}`);
+    });
   })
-  .catch(error => {
-    console.log(error.message)
-    process.exit(1)
-  })
+  .catch((error) => {
+    console.log(error.message);
+    process.exit(1);
+  });
