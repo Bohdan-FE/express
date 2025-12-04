@@ -17,19 +17,30 @@ app.use(logger(formatsLogger));
 app.use(express.json());
 app.use(express.static('public'));
 
-app.use(
-  cors({
-    origin: [
-      'http://localhost:4200',
-      'http://localhost:3000',
-      'https://react-monorepo-eta.vercel.app',
-      'https://stenohaline-cuc-unimposing.ngrok-free.dev',
-    ],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  }),
-);
+// CORS configuration
+const corsOptions = {
+  origin: [
+    'http://localhost:4200',
+    'http://localhost:3000',
+    'https://react-monorepo-eta.vercel.app',
+    'https://stenohaline-cuc-unimposing.ngrok-free.dev',
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'Accept',
+    'ngrok-skip-browser-warning',
+  ],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
 
 app.use('/auth/', authRouter);
 app.use('/tasks/', taskRouter);
