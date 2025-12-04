@@ -18,13 +18,21 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // CORS configuration
+const allowedOrigins = [
+  'http://localhost:4200',
+  'http://localhost:3000',
+  'https://react-monorepo-eta.vercel.app',
+  'https://stenohaline-cuc-unimposing.ngrok-free.dev',
+];
+
 const corsOptions = {
-  origin: [
-    'http://localhost:4200',
-    'http://localhost:3000',
-    'https://react-monorepo-eta.vercel.app',
-    'https://stenohaline-cuc-unimposing.ngrok-free.dev',
-  ],
+  origin: (origin: string | undefined, callback: Function) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: [
@@ -34,7 +42,6 @@ const corsOptions = {
     'ngrok-skip-browser-warning',
   ],
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  optionsSuccessStatus: 204,
 };
 
 app.use(cors(corsOptions));
