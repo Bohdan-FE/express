@@ -13,7 +13,17 @@ const app = express();
 const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short';
 
 app.use(logger(formatsLogger));
-app.use(cors({ origin: '*' }));
+app.use(
+  cors({
+    origin: [
+      'http://localhost:4200',
+      'http://localhost:3000',
+      'https://react-monorepo-eta.vercel.app',
+      'https://stenohaline-cuc-unimposing.ngrok-free.dev',
+    ],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(express.static('public'));
 
