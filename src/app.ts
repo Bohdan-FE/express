@@ -1,35 +1,45 @@
-import express, { NextFunction, Request, Response } from 'express'
-import logger from 'morgan'
-import cors from 'cors'
-import authRouter from './routes/auth'
-import taskRouter from './routes/task'
-import userRouter from './routes/user'
-import messagesRouter from './routes/message'
-import friendshipRouter from './routes/friend'
-import 'dotenv/config'
+import authRouter from './routes/auth';
+import friendshipRouter from './routes/friend';
+import messagesRouter from './routes/message';
+import taskRouter from './routes/task';
+import userRouter from './routes/user';
+import cors from 'cors';
+import 'dotenv/config';
+import express, { NextFunction, Request, Response } from 'express';
+import logger from 'morgan';
 
-const app = express()
+const app = express();
 
-const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short'
+const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short';
 
-app.use(logger(formatsLogger))
-app.use(cors())
-app.use(express.json())
-app.use(express.static('public'))
+app.use(logger(formatsLogger));
+app.use(
+  cors({
+    origin: [
+      'https://react-monorepo-eta.vercel.app',
+      'http://localhost:4200',
+      'http://localhost:3000',
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+  }),
+);
+app.use(express.json());
+app.use(express.static('public'));
 
-app.use('/auth/', authRouter)
-app.use('/tasks/', taskRouter)
-app.use('/users/', userRouter)
-app.use('/messages/', messagesRouter)
-app.use('/friends/', friendshipRouter)
+app.use('/auth/', authRouter);
+app.use('/tasks/', taskRouter);
+app.use('/users/', userRouter);
+app.use('/messages/', messagesRouter);
+app.use('/friends/', friendshipRouter);
 
 app.use((req, res) => {
-  res.status(404).json({ message: 'Not found' })
-})
+  res.status(404).json({ message: 'Not found' });
+});
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  const {status = 500, message = 'server error'} = err
-  res.status(status).json({message})
-})
+  const { status = 500, message = 'server error' } = err;
+  res.status(status).json({ message });
+});
 
-export default app
+export default app;
