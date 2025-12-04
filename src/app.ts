@@ -13,6 +13,10 @@ const app = express();
 const formatsLogger = app.get('env') === 'development' ? 'dev' : 'short';
 
 app.use(logger(formatsLogger));
+
+app.use(express.json());
+app.use(express.static('public'));
+
 app.use(
   cors({
     origin: [
@@ -26,15 +30,6 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   }),
 );
-app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(204);
-  } else {
-    next();
-  }
-});
-app.use(express.json());
-app.use(express.static('public'));
 
 app.use('/auth/', authRouter);
 app.use('/tasks/', taskRouter);
