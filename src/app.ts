@@ -31,33 +31,40 @@ const corsOptions = {
   ) => {
     if (!origin) return callback(null, true); // mobile apps, curl, servers
 
-    if (allowedOrigins.includes(origin) || origin.endsWith('.ngrok-free.dev')) {
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.ngrok-free.dev') ||
+      origin.includes('trycloudflare.com');
+
+    if (isAllowed) {
       return callback(null, true);
     }
 
     console.log('❌ Blocked by CORS:', origin);
     return callback(new Error('Not allowed by CORS'));
   },
+
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+
   allowedHeaders: [
     'Content-Type',
     'Authorization',
     'Accept',
     'ngrok-skip-browser-warning',
   ],
+
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
   optionsSuccessStatus: 204,
 };
+
+// Log incoming origin for debugging
 app.use((req, res, next) => {
   console.log('Incoming Origin:', req.headers.origin);
   next();
 });
 
 app.use(cors(corsOptions));
-
-// Handle preflight requests explicitly
-// app.options('*', cors(corsOptions));
 
 app.use('/auth/', authRouter);
 app.use('/tasks/', taskRouter);
