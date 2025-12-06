@@ -48,7 +48,7 @@ export const createTaskSchema = Joi.object({
 
 export const updateTaskSchema = Joi.object({
   title: Joi.string(),
-  description: Joi.string(),
+  description: Joi.string().allow(''),
   index: Joi.number(),
   date: Joi.date(),
   status: Joi.string().valid('todo', 'in_progress', 'done'),
