@@ -20,8 +20,9 @@ app.use(express.static('public'));
 // CORS configuration
 const allowedOrigins = [
   'http://localhost:4200',
-  'http://localhost:3000',
+  'http://localhost:4252',
   'https://react-monorepo-eta.vercel.app',
+  'https://api.apidashboard.online',
 ];
 
 const corsOptions = {

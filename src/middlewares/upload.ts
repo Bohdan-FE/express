@@ -44,8 +44,10 @@ export const uploadMessageImage = multer({
 export const deleteFromS3 = async (url: string) => {
   if (!url) return;
 
-  const key = url.split('.com/')[1];
+  // Only delete if it's from your S3 bucket
+  if (!url.includes('user-avatars-narutodashboard.s3.amazonaws.com')) return;
 
+  const key = url.split('.com/')[1];
   if (!key) return;
 
   const command = new DeleteObjectCommand({

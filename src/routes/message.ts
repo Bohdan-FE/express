@@ -15,6 +15,7 @@ router.get(
 
 router.post(
   '/image',
+
   authenticate,
   uploadMessageImage.single('image'),
   messagesControler.uploadMessageImage,
