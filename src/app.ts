@@ -1,5 +1,6 @@
 import authRouter from './routes/auth';
 import friendshipRouter from './routes/friend';
+import mailRouter from './routes/mail';
 import messagesRouter from './routes/message';
 import taskRouter from './routes/task';
 import userRouter from './routes/user';
@@ -72,6 +73,7 @@ app.use('/tasks/', taskRouter);
 app.use('/users/', userRouter);
 app.use('/messages/', messagesRouter);
 app.use('/friends/', friendshipRouter);
+app.use('/mail/', mailRouter);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found' });
