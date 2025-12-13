@@ -24,6 +24,8 @@ const allowedOrigins = [
   'http://localhost:4252',
   'https://react-monorepo-eta.vercel.app',
   'https://api.apidashboard.online',
+  'https://www.bohdanvivchar.space',
+  'https://bohdanvivchar.space',
 ];
 
 const corsOptions = {
