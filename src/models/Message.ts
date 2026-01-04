@@ -17,6 +17,7 @@ export interface IMessage extends Document {
   createdAt?: Date;
   updatedAt?: Date;
   imageUrl?: string;
+  clientId?: string;
 }
 
 const messageSchema = new Schema<IMessage>(
@@ -30,6 +31,7 @@ const messageSchema = new Schema<IMessage>(
       default: 'sent',
     },
     imageUrl: { type: String },
+    clientId: { type: String },
   },
   { versionKey: false, timestamps: true },
 );
