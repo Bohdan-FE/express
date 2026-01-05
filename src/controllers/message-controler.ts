@@ -28,6 +28,8 @@ const getMessages = async (req: Request, res: Response) => {
     .skip(skip)
     .limit(Number(per_page));
 
+  console.log(messages);
+
   const total = await Message.countDocuments(query);
 
   res.json({
