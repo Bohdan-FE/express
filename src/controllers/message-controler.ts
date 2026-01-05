@@ -5,27 +5,30 @@ import { Request, Response } from 'express';
 
 const getMessages = async (req: Request, res: Response) => {
   const { _id: owner } = req.user;
-  const { page, per_page } = req.query;
+  const { page = 1, per_page = 20, updatedAfter } = req.query;
   const { id: to } = req.params;
 
   const skip = (Number(page) - 1) * Number(per_page);
 
-  const messages = await Message.find({
+  const query: any = {
     $or: [
       { from: owner, to },
       { from: to, to: owner },
     ],
-  })
+  };
+
+  if (updatedAfter) {
+    query.updatedAt = {
+      $gt: new Date(updatedAfter as string),
+    };
+  }
+
+  const messages = await Message.find(query)
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(Number(per_page));
 
-  const total = await Message.countDocuments({
-    $or: [
-      { from: owner, to },
-      { from: to, to: owner },
-    ],
-  });
+  const total = await Message.countDocuments(query);
 
   res.json({
     data: messages,
