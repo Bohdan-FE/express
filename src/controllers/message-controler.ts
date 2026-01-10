@@ -5,7 +5,13 @@ import { Request, Response } from 'express';
 
 const getMessages = async (req: Request, res: Response) => {
   const { _id: owner } = req.user;
-  const { page = 1, per_page = 20, updatedAfter } = req.query;
+  const {
+    page = 1,
+    per_page = 20,
+    updatedAfter,
+    createdBefore,
+    createdAfter,
+  } = req.query;
   const { id: to } = req.params;
 
   const skip = (Number(page) - 1) * Number(per_page);
@@ -20,6 +26,20 @@ const getMessages = async (req: Request, res: Response) => {
   if (updatedAfter) {
     query.updatedAt = {
       $gt: new Date(updatedAfter as string),
+    };
+  }
+
+  if (createdBefore) {
+    query.createdAt = {
+      ...query.createdAt,
+      $lt: new Date(createdBefore as string),
+    };
+  }
+
+  if (createdAfter) {
+    query.createdAt = {
+      ...query.createdAt,
+      $gt: new Date(createdAfter as string),
     };
   }
 
